@@ -21,6 +21,6 @@ public class PacienteController extends CommonController<PacienteRequest, Pacien
     public ResponseEntity<PacienteResponse> obtenerPacientePorId(
             @PathVariable @Positive(message = "El ID debe ser positivo") Long id
     ) {
-        return ResponseEntity.ok(service.obtenerPorId(id));
+        return ResponseEntity.ok(service.obtenerPacientePorId(id));
     }
 }

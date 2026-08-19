@@ -1,6 +1,7 @@
 package com.henry.citas.repository;
 
 import com.henry.citas.entity.Cita;
+import com.henry.citas.enums.EstadoCita;
 import com.henry.commons.enums.EstadoRegistro;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,4 +15,10 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     List<Cita> findByEstadoRegistro(EstadoRegistro estadoRegistro);
 
     Optional<Cita> findByIdAndEstadoRegistro(Long id, EstadoRegistro estadoRegistro);
+
+    boolean existsByIdPacienteAndEstadoCitaIn(Long idPaciente, List<EstadoCita> estados);
+
+    boolean existsByIdMedicoAndEstadoCitaIn(Long idMedico, List<EstadoCita> estados);
+
+    boolean existsByIdPacienteAndEstadoCitaInAndIdNot(Long idPaciente, List<EstadoCita> estados, Long idCita);
 }

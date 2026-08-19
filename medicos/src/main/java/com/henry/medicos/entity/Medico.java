@@ -133,11 +133,4 @@ public class Medico {
         this.telefono = telefono.trim();
         this.cedulaProfesional = cedulaProfesional.trim();
     }
-
-    //TODO: VERIFICAR CAMBIOS
-
-    public void validarDisponibilidad() {
-        if(this.disponibilidad != DisponibilidadMedico.DISPONIBLE)
-            throw new IllegalStateException("Por el momento el médico no tiene disponibilidad para agendar la cita");
-    }
 }

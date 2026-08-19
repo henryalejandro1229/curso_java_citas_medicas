@@ -1,5 +1,6 @@
 package com.henry.medicos.service;
 
+import com.henry.commons.client.CitaClient;
 import com.henry.commons.dto.medicos.MedicoRequest;
 import com.henry.commons.dto.medicos.MedicoResponse;
 import com.henry.commons.enums.DisponibilidadMedico;
@@ -25,6 +26,8 @@ public class MedicoServiceImpl implements MedicoService {
     private final MedicoRepository medicoRepository;
 
     private final MedicoMapper medicoMapper;
+
+    private final CitaClient citaClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -77,6 +80,8 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Actualizando médico con id: {}", id);
 
+        existenCitasActivasPorMedico(id);
+
         validarCambiosUnicos(request, id);
 
         medico.actualizar(
@@ -101,6 +106,8 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Actualizando disponibilidad del médico con id: {}", idDisponibilidad);
 
+        existenCitasActivasPorMedico(idMedico);
+
         DisponibilidadMedico nuevaDisponibilidad = DisponibilidadMedico
                 .obtenerDisponibilidadPorCodigo(idDisponibilidad);
 
@@ -117,6 +124,8 @@ public class MedicoServiceImpl implements MedicoService {
         Medico medico = obtenerMedicoActivoOException(id);
 
         log.info("Eliminando médico con id: {}", id);
+
+        existenCitasActivasPorMedico(id);
 
         medico.eliminar();
 
@@ -172,5 +181,11 @@ public class MedicoServiceImpl implements MedicoService {
                 request.cedulaProfesional().trim(), EstadoRegistro.ACTIVO, id))
             throw new IllegalArgumentException("Ya existe un médico activo registrado con la cédula profesional: "
                     + request.cedulaProfesional());
+    }
+
+    private void existenCitasActivasPorMedico(Long id) {
+        log.info("Verificando citas activas del médico con id {} en el servicio remoto...", id);
+
+        citaClient.existenCitasActivasPorMedico(id);
     }
 }
