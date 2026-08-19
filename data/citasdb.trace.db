@@ -1,0 +1,4 @@
+2026-08-19 01:17:44.184524-06:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Error de Sintaxis en sentencia SQL "[*]slect * from citas"; se esperaba "SAVEPOINT, SCRIPT, SHUTDOWN"
+Syntax error in SQL statement "[*]slect * from citas"; expected "SAVEPOINT, SCRIPT, SHUTDOWN"; SQL statement:
+slect * from citas [42001-240]
