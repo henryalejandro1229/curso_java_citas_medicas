@@ -80,7 +80,8 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Actualizando médico con id: {}", id);
 
-        existenCitasActivasPorMedico(id);
+        // Se omite peticion a citas por reglas de negocio
+        // existenCitasActivasPorMedico(id);
 
         validarCambiosUnicos(request, id);
 
@@ -106,8 +107,10 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Actualizando disponibilidad del médico con id: {}", idDisponibilidad);
 
+        /*
+        Se omite peticion a citas por reglas de negocio
         if (DisponibilidadMedico.DISPONIBLE.getCodigo().equals(idDisponibilidad))
-            existenCitasActivasPorMedico(idMedico);
+            existenCitasActivasPorMedico(idMedico); */
 
         DisponibilidadMedico nuevaDisponibilidad = DisponibilidadMedico
                 .obtenerDisponibilidadPorCodigo(idDisponibilidad);
@@ -126,7 +129,8 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Eliminando médico con id: {}", id);
 
-        existenCitasActivasPorMedico(id);
+        // Se omite peticion a citas por reglas de negocio
+        // existenCitasActivasPorMedico(id);
 
         medico.eliminar();
 
