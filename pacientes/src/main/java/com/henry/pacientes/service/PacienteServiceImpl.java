@@ -1,5 +1,6 @@
 package com.henry.pacientes.service;
 
+import com.henry.commons.client.CitaClient;
 import com.henry.commons.dto.pacientes.PacienteRequest;
 import com.henry.commons.dto.pacientes.PacienteResponse;
 import com.henry.commons.enums.EstadoRegistro;
@@ -24,6 +25,8 @@ public class PacienteServiceImpl implements PacienteService {
 
     private final PacienteMapper pacienteMapper;
 
+    private final CitaClient citaClient;
+
     @Override
     public List<PacienteResponse> listar() {
         log.info("Listando todos los pacientes");
@@ -33,18 +36,19 @@ public class PacienteServiceImpl implements PacienteService {
     }
 
     @Override
-    public PacienteResponse obtenerPacienteActivoPorId(Long id) {
+    public PacienteResponse obtenerPacientePorId(Long id) {
         log.info("Listando paciente activo con id: {}", id);
-        return pacienteMapper.entidadAResponse(obtenerPacienteActivo(id));
+
+        return pacienteMapper.entidadAResponse(
+                pacienteRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException("Paciente no encontrado con id: " + id)));
     }
 
     @Override
     public PacienteResponse obtenerPorId(Long id) {
         log.info("Listando paciente con id: {}", id);
-        return pacienteMapper.entidadAResponse(
-                pacienteRepository.findById(id)
-                        .orElseThrow(() ->
-                                new RecursoNoEncontradoException("Paciente no encontrado con id: " + id)));
+        return pacienteMapper.entidadAResponse(obtenerPacienteActivo(id));
     }
 
     @Override
@@ -70,6 +74,8 @@ public class PacienteServiceImpl implements PacienteService {
 
         log.info("Actualizando datos de paciente con id: ", id);
 
+        existenCitasActivasPorPaciente(id);
+
         paciente.actualizar(
                 request.nombre(),
                 request.apellidoPaterno(),
@@ -93,6 +99,8 @@ public class PacienteServiceImpl implements PacienteService {
 
         log.info("Eliminando paciente con id: {}", id);
 
+        existenCitasActivasPorPaciente(id);
+
         paciente.setEstatusEliminado();
 
         pacienteRepository.save(paciente);
@@ -104,5 +112,11 @@ public class PacienteServiceImpl implements PacienteService {
         return pacienteRepository.findByIdAndEstadoRegistro(id, EstadoRegistro.ACTIVO)
                 .orElseThrow(() ->
                         new RecursoNoEncontradoException("Paciente activo no encontrado con id: " + id));
+    }
+
+    private void existenCitasActivasPorPaciente(Long id) {
+        log.info("Verificando citas activas del paciente con id {} en el servicio remoto...", id);
+
+        citaClient.existenCitasActivasPorPaciente(id);
     }
 }

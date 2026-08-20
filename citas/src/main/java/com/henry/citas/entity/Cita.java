@@ -74,14 +74,14 @@ public class Cita {
     private void validarEliminacionPermitida() {
         validarNoEliminada();
 
-        if (estadoCita.isEliminable())
+        if (!estadoCita.isEliminable())
             throw new IllegalStateException("La cita con estado " + estadoCita + " no puede eliminarse");
     }
 
-    private void validarActualizacionPermitida() {
+    public void validarActualizacionPermitida() {
         validarNoEliminada();
 
-        if (estadoCita.isActualizable())
+        if (!estadoCita.isActualizable())
             throw new IllegalStateException("La cita con estado " + estadoCita + " no puede actualizarse");
     }
 
