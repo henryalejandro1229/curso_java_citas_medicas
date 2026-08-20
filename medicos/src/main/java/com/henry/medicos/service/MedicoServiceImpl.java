@@ -80,8 +80,7 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Actualizando médico con id: {}", id);
 
-        // Se omite peticion a citas por reglas de negocio
-        // existenCitasActivasPorMedico(id);
+        existenCitasActivasPorMedico(id);
 
         validarCambiosUnicos(request, id);
 
@@ -129,8 +128,7 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Eliminando médico con id: {}", id);
 
-        // Se omite peticion a citas por reglas de negocio
-        // existenCitasActivasPorMedico(id);
+        existenCitasActivasPorMedico(id);
 
         medico.eliminar();
 
