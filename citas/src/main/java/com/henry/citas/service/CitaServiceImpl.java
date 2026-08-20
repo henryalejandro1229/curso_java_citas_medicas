@@ -35,7 +35,9 @@ public class CitaServiceImpl implements CitaService{
 
     private final PacienteClient pacienteClient;
 
-    private final TransactionTemplate transactionTemplate;
+    private final List<EstadoCita> ESTADOS_CITA_ACTIVOS = List.of(
+    EstadoCita.PENDIENTE, EstadoCita.EN_CURSO, EstadoCita.CONFIRMADA
+        );
 
     @Override
     @Transactional(readOnly = true)
@@ -80,12 +82,12 @@ public class CitaServiceImpl implements CitaService{
         //Valida qu el paciente no tenga citas activas
         consultaCitasActivasPorPaciente(pacienteResponse.id());
 
-        //Actualizar disponibilidad médico
-        actualizarDisponibilidadMedico(request.idMedico(), DisponibilidadMedico.NO_DISPONIBLE.getCodigo());
-
         Cita cita = citaMapper.requestAEntidad(request);
 
         citaRepository.save(cita);
+
+        //Actualizar disponibilidad médico
+        actualizarDisponibilidadMedico(request.idMedico(), DisponibilidadMedico.NO_DISPONIBLE.getCodigo());
 
         log.info("Cita registrada exitosamente");
 
@@ -108,24 +110,16 @@ public class CitaServiceImpl implements CitaService{
 
         cita.validarActualizacionPermitida();
 
-        MedicoResponse medicoResponse = obtenerMedicoActivo(request.idMedico());
-
-        //Valida si el idMedico cambia
-        if (!cita.getIdMedico().equals(request.idMedico())) {
-            validarEstatusDisponibleMedico(medicoResponse.idDisponibilidad());
-
-            //Actualizar disponibilidad de médico "retirado"
-            actualizarDisponibilidadMedico(medicoResponse.id(), DisponibilidadMedico.NO_DISPONIBLE.getCodigo());
-
-            //Actualizar disponibilidad de nuevo médico
-            actualizarDisponibilidadMedico(cita.getIdMedico(), DisponibilidadMedico.DISPONIBLE.getCodigo());
-        }
-
         PacienteResponse pacienteResponse = obtenerPacienteActivo(request.idPaciente());
 
         consultaCitasActivasPorPacienteActualizar(pacienteResponse.id(), cita.getId());
 
-        log.info("Actualizando cita con id: {}", id);
+        MedicoResponse medicoResponse = obtenerMedicoActivo(request.idMedico());
+
+        //Valida si es nuevo médico
+        boolean esNuevoMedico = !cita.getIdMedico().equals(request.idMedico());
+
+        if (esNuevoMedico) validarEstatusDisponibleMedico(medicoResponse.idDisponibilidad());
 
         cita.actualizar(
                 request.idPaciente(),
@@ -133,6 +127,14 @@ public class CitaServiceImpl implements CitaService{
                 request.fechaCita(),
                 request.sintomas()
         );
+
+        if (esNuevoMedico) {
+            //Actualizar disponibilidad de médico "retirado"
+            actualizarDisponibilidadMedico(medicoResponse.id(), DisponibilidadMedico.NO_DISPONIBLE.getCodigo());
+
+            //Actualizar disponibilidad de nuevo médico
+            actualizarDisponibilidadMedico(cita.getIdMedico(), DisponibilidadMedico.DISPONIBLE.getCodigo());
+        }
 
         log.info("Cita actualizada con el id: {}", id);
 
@@ -155,13 +157,13 @@ public class CitaServiceImpl implements CitaService{
         MedicoResponse medicoResponse =
                 obtenerMedicoSinEstado(cita.getIdMedico());
 
+        existenCitasActivasMedicoOmitiendoCita(medicoResponse.id(), idCita);
+
         cita.actualizarEstadoCita(
                 EstadoCita.obtenerEstadoCitaPorCodigo(idEstadoCita)
         );
 
         citaRepository.save(cita);
-
-        existenCitasActivasMedicoOmitiendoCita(medicoResponse.id(), idCita);
 
         actualizarDisponibilidadMedico(medicoResponse.id(), obtenerNuevaDisponibilidadMedico(idEstadoCita));
 
@@ -258,17 +260,14 @@ public class CitaServiceImpl implements CitaService{
     private void consultaCitasActivasPorPaciente(Long idPaciente) {
         log.info("Validando citas activas del paciente con id {}", idPaciente);
 
-        if (citaRepository.existsByIdPacienteAndEstadoCitaIn(idPaciente, List.of(
-                EstadoCita.PENDIENTE, EstadoCita.EN_CURSO, EstadoCita.CONFIRMADA
-        )))
+        if (citaRepository.existsByIdPacienteAndEstadoCitaIn(idPaciente, ESTADOS_CITA_ACTIVOS))
             throw new IllegalStateException("El paciente tiene citas activas");
     }
 
     private void consultaCitasActivasPorPacienteActualizar(Long idPaciente, Long idCita) {
         log.info("Validando citas activas del paciente con id {}", idPaciente);
 
-        if (citaRepository.existsByIdPacienteAndEstadoCitaInAndIdNot(idPaciente, List.of(
-                EstadoCita.PENDIENTE, EstadoCita.EN_CURSO, EstadoCita.CONFIRMADA), idCita))
+        if (citaRepository.existsByIdPacienteAndEstadoCitaInAndIdNot(idPaciente, ESTADOS_CITA_ACTIVOS, idCita))
             throw new IllegalStateException("El paciente tiene citas activas");
     }
 
