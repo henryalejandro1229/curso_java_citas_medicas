@@ -106,8 +106,10 @@ public class MedicoServiceImpl implements MedicoService {
 
         log.info("Actualizando disponibilidad del médico con id: {}", idDisponibilidad);
 
+        /*
+        Se omite peticion a citas por reglas de negocio
         if (DisponibilidadMedico.DISPONIBLE.getCodigo().equals(idDisponibilidad))
-            existenCitasActivasPorMedico(idMedico);
+            existenCitasActivasPorMedico(idMedico); */
 
         DisponibilidadMedico nuevaDisponibilidad = DisponibilidadMedico
                 .obtenerDisponibilidadPorCodigo(idDisponibilidad);
