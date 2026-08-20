@@ -17,11 +17,11 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 
 @Service
-@Transactional
 @AllArgsConstructor
 @Slf4j
 public class CitaServiceImpl implements CitaService{
@@ -33,6 +33,8 @@ public class CitaServiceImpl implements CitaService{
     private final MedicoClient medicoClient;
 
     private final PacienteClient pacienteClient;
+
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -140,19 +142,38 @@ public class CitaServiceImpl implements CitaService{
     @Override
     public void actualizarEstadoCita(Long idCita, Long idEstadoCita) {
 
-        Cita cita = obtenerCitaOExcepcion(idCita);
-
-        cita.validarActualizacionPermitida();
-
-        MedicoResponse medicoResponse = obtenerMedicoSinEstado(cita.getIdMedico());
-
-        actualizarDisponibilidadMedico(medicoResponse.id(), DisponibilidadMedico.DISPONIBLE.getCodigo());
-
         log.info("Actualizando estado de la cita con id: " + idCita );
 
-        cita.actualizarEstadoCita(EstadoCita.obtenerEstadoCitaPorCodigo(idEstadoCita));
+        MedicoResponse medicoResponse = transactionTemplate.execute(status -> {
+
+            Cita cita = obtenerCitaOExcepcion(idCita);
+
+            cita.validarActualizacionPermitida();
+
+            MedicoResponse medicoResponseLocal =
+                    obtenerMedicoSinEstado(cita.getIdMedico());
+
+            cita.actualizarEstadoCita(
+                    EstadoCita.obtenerEstadoCitaPorCodigo(idEstadoCita)
+            );
+
+            citaRepository.save(cita);
+
+            return medicoResponseLocal;
+        });
+
+        actualizarDisponibilidadMedico(medicoResponse.id(), obtenerNuevaDisponibilidadMedico(idEstadoCita));
 
         log.info("Estado de la cita {} actualizado correctamente", idCita);
+    }
+
+    private Long obtenerNuevaDisponibilidadMedico(Long idEstadoCita) {
+        EstadoCita estadoCita = EstadoCita.obtenerEstadoCitaPorCodigo(idEstadoCita);
+        return switch (estadoCita) {
+            case PENDIENTE, CONFIRMADA -> DisponibilidadMedico.NO_DISPONIBLE.getCodigo();
+            case EN_CURSO -> DisponibilidadMedico.EN_CONSULTA.getCodigo();
+            case FINALIZADA, CANCELADA -> DisponibilidadMedico.DISPONIBLE.getCodigo();
+        };
     }
 
     @Override
@@ -164,7 +185,9 @@ public class CitaServiceImpl implements CitaService{
 
         MedicoResponse medicoResponse = obtenerMedicoSinEstado(cita.getIdMedico());
 
-        actualizarDisponibilidadMedico(medicoResponse.id(), DisponibilidadMedico.DISPONIBLE.getCodigo());
+        if (EstadoCita.CONFIRMADA.equals(cita.getEstadoCita())
+                || EstadoCita.EN_CURSO.equals(cita.getEstadoCita()))
+            actualizarDisponibilidadMedico(medicoResponse.id(), DisponibilidadMedico.DISPONIBLE.getCodigo());
 
         cita.eliminar();
 
