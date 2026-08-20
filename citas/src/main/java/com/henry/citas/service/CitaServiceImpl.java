@@ -102,6 +102,9 @@ public class CitaServiceImpl implements CitaService{
 
         Cita cita = obtenerCitaOExcepcion(id);
 
+        if (cita.getEstadoCita().equals(EstadoCita.EN_CURSO))
+            throw new IllegalStateException("La cita no se puede actualizar porque se encuentra en estado " + cita.getEstadoCita());
+
         cita.validarActualizacionPermitida();
 
         MedicoResponse medicoResponse = obtenerMedicoActivo(request.idMedico());
@@ -185,11 +188,10 @@ public class CitaServiceImpl implements CitaService{
 
         MedicoResponse medicoResponse = obtenerMedicoSinEstado(cita.getIdMedico());
 
-        if (EstadoCita.CONFIRMADA.equals(cita.getEstadoCita())
-                || EstadoCita.EN_CURSO.equals(cita.getEstadoCita()))
-            actualizarDisponibilidadMedico(medicoResponse.id(), DisponibilidadMedico.DISPONIBLE.getCodigo());
-
+        //cita.eliminar incluye la validación para impedir la eliminación con estados PENDIENTE, CANCELADA o FINALIZADA.
         cita.eliminar();
+
+        actualizarDisponibilidadMedico(medicoResponse.id(), DisponibilidadMedico.DISPONIBLE.getCodigo());
 
         log.info("Cita con id {} ha sido marcada como eliminada", id);
     }
